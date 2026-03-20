@@ -1,5 +1,6 @@
 # RealDeal - Smart Grocery Price Comparison Platform
-
+## 🌐 Live Demo
+👉 https://real-deal-project-ieo2.vercel.app/
 A comprehensive full-stack web application that helps users compare grocery product prices across multiple quick-commerce and e-commerce platforms like Blinkit, Zepto, Instamart, and BigBasket.
 
 ## 🚀 Features
