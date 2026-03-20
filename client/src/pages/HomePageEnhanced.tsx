@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Product, SearchFilters } from '../types';
 import { productApi } from '../services/api';
 import { useLocation } from '../contexts/LocationContext';
@@ -9,7 +9,7 @@ import ProductComparison from '../components/ProductComparison';
 import PriceInsights from '../components/PriceInsights';
 import SmartRecommendations from '../components/SmartRecommendations';
 import Header from '../components/Header';
-import { FunnelIcon, AdjustmentsHorizontalIcon, ArrowPathIcon, ChartBarIcon, LightBulbIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, ChartBarIcon, LightBulbIcon } from '@heroicons/react/24/outline';
 
 const HomePageEnhanced: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -29,16 +29,9 @@ const HomePageEnhanced: React.FC = () => {
   const [enhancedSearch, setEnhancedSearch] = useState<any>(null);
   
   const { state: locationState } = useLocation();
-  const { trackSearch, trackProductView, trackComparison, trackPlatformClick, trackFilterChange, trackSortChange } = useUserTracking('session_' + Date.now());
+  const { trackSearch, trackProductView, trackComparison, trackPlatformClick, trackFilterChange } = useUserTracking('session_' + Date.now());
 
-  // Load initial data
-  useEffect(() => {
-    loadPopularProducts();
-    loadCategories();
-    loadBrands();
-  }, [locationState.currentLocation.city]);
-
-  const loadPopularProducts = async () => {
+  const loadPopularProducts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await productApi.getPopular(locationState.currentLocation.city, 10);
@@ -51,9 +44,9 @@ const HomePageEnhanced: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [locationState.currentLocation.city]);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const response = await productApi.getCategories(locationState.currentLocation.city);
       if (response.success) {
@@ -62,9 +55,9 @@ const HomePageEnhanced: React.FC = () => {
     } catch (error) {
       console.error('Error loading categories:', error);
     }
-  };
+  }, [locationState.currentLocation.city]);
 
-  const loadBrands = async () => {
+  const loadBrands = useCallback(async () => {
     try {
       const response = await productApi.getBrands(locationState.currentLocation.city);
       if (response.success) {
@@ -73,9 +66,16 @@ const HomePageEnhanced: React.FC = () => {
     } catch (error) {
       console.error('Error loading brands:', error);
     }
-  };
+  }, [locationState.currentLocation.city]);
 
-  const handleSearch = async (query: string) => {
+  // Load initial data
+  useEffect(() => {
+    loadPopularProducts();
+    loadCategories();
+    loadBrands();
+  }, [loadPopularProducts, loadCategories, loadBrands]);
+
+  const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) return;
 
     try {
@@ -111,7 +111,7 @@ const HomePageEnhanced: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, locationState.currentLocation.city, locationState.currentLocation.pincode, trackSearch]);
 
   const handleFilterChange = async (newFilters: Partial<SearchFilters>) => {
     const updatedFilters = { ...filters, ...newFilters };
@@ -140,14 +140,6 @@ const HomePageEnhanced: React.FC = () => {
 
   const handlePlatformClick = async (platform: string, productId: string, price: number) => {
     await trackPlatformClick(platform, productId, price);
-  };
-
-  const refreshData = () => {
-    if (searchQuery) {
-      handleSearch(searchQuery);
-    } else {
-      loadPopularProducts();
-    }
   };
 
   const selectedProductData = products.find(p => p._id === selectedProduct);

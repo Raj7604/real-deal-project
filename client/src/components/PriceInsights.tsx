@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PriceInsight } from '../types/intelligence';
-import { intelligenceApi, formatInsightDescription, getInsightIcon, getConfidenceColor, getConfidenceLabel } from '../services/intelligenceApi';
-import { XMarkIcon, InformationCircleIcon, ArrowTrendingUpIcon, ClockIcon, BuildingStorefrontIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { intelligenceApi, formatInsightDescription, getConfidenceColor, getConfidenceLabel } from '../services/intelligenceApi';
+import { InformationCircleIcon, ArrowTrendingUpIcon, ClockIcon, BuildingStorefrontIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 
 interface PriceInsightsProps {
   productId: string;
@@ -17,11 +17,7 @@ const PriceInsights: React.FC<PriceInsightsProps> = ({ productId, location, clas
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadInsights();
-  }, [productId, location]);
-
-  const loadInsights = async () => {
+  const loadInsights = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -38,7 +34,11 @@ const PriceInsights: React.FC<PriceInsightsProps> = ({ productId, location, clas
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId, location.city, location.pincode]);
+
+  useEffect(() => {
+    loadInsights();
+  }, [loadInsights]);
 
   const getInsightTypeIcon = (insightType: string) => {
     switch (insightType) {

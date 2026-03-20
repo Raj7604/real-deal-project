@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useLocation } from '../contexts/LocationContext';
 import { useDebounce } from '../hooks/useDebounce';
@@ -23,44 +23,37 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const { state: locationState } = useLocation();
 
-  // Debounce function
-  const debounce = (func: Function, wait: number) => {
+  // Safely memoize explicit typing buffers directly via useMemo overriding volatile native functions.
+  const fetchSuggestions = useMemo(() => {
     let timeout: NodeJS.Timeout;
-    return function executedFunction(...args: any[]) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
+    return (searchQuery: string) => {
+      const executeFn = async () => {
+        if (searchQuery.length < 2) {
+          setSuggestions([]);
+          setShowSuggestions(false);
+          return;
+        }
+
+        try {
+          setIsLoading(true);
+          const mockSuggestions = [
+            'milk', 'bread', 'eggs', 'rice', 'oil', 'sugar', 'salt',
+            'vegetables', 'fruits', 'dairy', 'snacks', 'beverages'
+          ].filter(item => item.toLowerCase().includes(searchQuery.toLowerCase()));
+          
+          setSuggestions(mockSuggestions.slice(0, 5));
+          setShowSuggestions(true);
+        } catch (error) {
+          console.error('Error fetching suggestions:', error);
+        } finally {
+          setIsLoading(false);
+        }
       };
+
       clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
+      timeout = setTimeout(executeFn, 300);
     };
-  };
-
-  // Fetch suggestions
-  const fetchSuggestions = debounce(async (searchQuery: string) => {
-    if (searchQuery.length < 2) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      // In a real implementation, you would call the suggestions API
-      // For now, we'll use mock suggestions
-      const mockSuggestions = [
-        'milk', 'bread', 'eggs', 'rice', 'oil', 'sugar', 'salt',
-        'vegetables', 'fruits', 'dairy', 'snacks', 'beverages'
-      ].filter(item => item.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      setSuggestions(mockSuggestions.slice(0, 5));
-      setShowSuggestions(true);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, 300);
+  }, []);
 
   // Debounced API Request Trigger
   const automatedSearchQuery = useDebounce(query, 600);
@@ -72,7 +65,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [query]);
+  }, [query, fetchSuggestions]);
 
   useEffect(() => {
     // only trigger main API if typing has actually stopped natively via debounce cache
@@ -82,7 +75,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
        // if cleared completely
        onSearch('');
     }
-  }, [automatedSearchQuery]);
+  }, [automatedSearchQuery, initialValue, onSearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

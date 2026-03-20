@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
 import { LocationData, Location } from '../types';
 import { locationApi } from '../services/api';
 
@@ -67,13 +67,13 @@ interface LocationProviderProps {
 export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(locationReducer, initialState);
 
-  const setLocation = (location: Location) => {
+  const setLocation = useCallback((location: Location) => {
     // Save to localStorage
     localStorage.setItem('userLocation', JSON.stringify(location));
     dispatch({ type: 'SET_LOCATION', payload: location });
-  };
+  }, []);
 
-  const detectLocation = async () => {
+  const detectLocation = useCallback(async () => {
     dispatch({ type: 'DETECT_LOCATION' });
 
     try {
@@ -124,9 +124,9 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
       console.error('Error in detectLocation:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to detect location' });
     }
-  };
+  }, [setLocation]);
 
-  const loadCities = async () => {
+  const loadCities = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       const response = await locationApi.getCities();
@@ -141,12 +141,12 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, []);
 
   useEffect(() => {
     detectLocation();
     loadCities();
-  }, []);
+  }, [detectLocation, loadCities]);
 
   const value: LocationContextType = {
     state,

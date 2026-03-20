@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PersonalizedRecommendation } from '../types/intelligence';
 import { intelligenceApi } from '../services/intelligenceApi';
-import { LightBulbIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { LightBulbIcon } from '@heroicons/react/24/outline';
 
 interface SmartRecommendationsProps {
   sessionId: string;
@@ -21,11 +21,7 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadRecommendations();
-  }, [sessionId, location]);
-
-  const loadRecommendations = async () => {
+  const loadRecommendations = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -42,7 +38,11 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [sessionId, location.city, location.pincode]);
+
+  useEffect(() => {
+    loadRecommendations();
+  }, [loadRecommendations]);
 
   const getRecommendationIcon = (type: string) => {
     switch (type) {
